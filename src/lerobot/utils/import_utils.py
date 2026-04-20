@@ -22,7 +22,10 @@ from draccus.choice_types import ChoiceRegistry
 
 
 def is_package_available(
-    pkg_name: str, import_name: str | None = None, return_version: bool = False
+    pkg_name: str,
+    import_name: str | None = None,
+    return_version: bool = False,
+    allow_module_without_metadata: bool = False,
 ) -> tuple[bool, str] | bool:
     """
     Check if the package spec exists and grab its version to avoid importing a local directory.
@@ -32,6 +35,8 @@ def is_package_available(
         import_name: The actual name used to import the package (e.g. "can").
                      Defaults to pkg_name if not provided.
         return_version: Whether to return the version string.
+        allow_module_without_metadata: Whether to accept importable modules even if they don't expose
+            package metadata via importlib.metadata. This is useful for vendor SDK wheels.
     """
     if import_name is None:
         import_name = pkg_name
@@ -60,8 +65,16 @@ def is_package_available(
                     # If the package can't be imported, it's not available
                     package_exists = False
             else:
-                # For packages other than "torch", don't attempt the fallback and set as not available
-                package_exists = False
+                if allow_module_without_metadata:
+                    try:
+                        package = importlib.import_module(import_name)
+                        package_version = getattr(package, "__version__", "N/A")
+                        package_exists = True
+                    except ImportError:
+                        package_exists = False
+                else:
+                    # For packages other than "torch", don't attempt the fallback and set as not available
+                    package_exists = False
         logging.debug(f"Detected {pkg_name} version: {package_version}")
     if return_version:
         return package_exists, package_version
@@ -80,18 +93,32 @@ def get_safe_default_codec():
         return "pyav"
 
 
-_require_package_cache: dict[str, bool] = {}
+_require_package_cache: dict[tuple[str, bool], bool] = {}
 
 
-def require_package(pkg_name: str, extra: str, import_name: str | None = None) -> None:
+def require_package(
+    pkg_name: str,
+    extra: str,
+    import_name: str | None = None,
+    *,
+    allow_module_without_metadata: bool = False,
+    install_hint: str | None = None,
+) -> None:
     """Raise an informative ImportError if a package required by an optional feature is missing."""
-    cache_key = import_name or pkg_name
+    cache_key = (import_name or pkg_name, allow_module_without_metadata)
     if cache_key not in _require_package_cache:
-        _require_package_cache[cache_key] = is_package_available(pkg_name, import_name)
+        _require_package_cache[cache_key] = is_package_available(
+            pkg_name,
+            import_name,
+            allow_module_without_metadata=allow_module_without_metadata,
+        )
     if not _require_package_cache[cache_key]:
+        install_msg = install_hint or (
+            f"Install it with: pip install 'lerobot[{extra}]' "
+            f"(or uv pip install 'lerobot[{extra}]')"
+        )
         raise ImportError(
-            f"'{pkg_name}' is required but not installed. Install it with: "
-            f"pip install 'lerobot[{extra}]' (or uv pip install 'lerobot[{extra}]')"
+            f"'{pkg_name}' is required but not installed. {install_msg}"
         )
 
 
@@ -121,6 +148,9 @@ _hebi_available = is_package_available("hebi-py", import_name="hebi")
 _teleop_available = is_package_available("teleop")
 _placo_available = is_package_available("placo")
 _hidapi_available = is_package_available("hidapi", import_name="hid")
+# AIRBOT ships vendor wheels where the import name is stable (`arm_sdk`) but
+# the distribution name can vary across releases, so we allow import-only probing here.
+_arm_sdk_available = is_package_available("arm_sdk", allow_module_without_metadata=True)
 
 # Data / serialization
 _pandas_available = is_package_available("pandas")

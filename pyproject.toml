@@ -169,6 +169,9 @@ intelrealsense = [
     "pyrealsense2-macosx>=2.54,<2.57.0 ; sys_platform == 'darwin'",
 ]
 phone = ["hebi-py>=2.8.0,<2.12.0", "teleop>=0.1.0,<0.2.0", "fastapi<1.0", "lerobot[scipy-dep]"]
+# AIRBOT Play relies on the vendor-provided `arm_sdk` wheel, which is not published on PyPI.
+# Install that wheel manually in the current environment; this extra reserves the feature name.
+airbot_play = []
 
 # Policies
 diffusion = ["lerobot[diffusers-dep]"]
@@ -251,6 +254,7 @@ all = [
     "lerobot[aloha]",
     "lerobot[pusht]",
     "lerobot[phone]",
+    "lerobot[airbot_play]",
     "lerobot[libero]; sys_platform == 'linux'",
     "lerobot[metaworld]",
     "lerobot[sarm]",

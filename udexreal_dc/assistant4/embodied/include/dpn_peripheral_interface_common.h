@@ -1,0 +1,844 @@
+/******************************************************************************
+Filename    :
+Content     :
+Created     :   July, 2016
+Authors     :   deepoon.com
+Copyright   :   Copyright 2016 Deepoon, Inc. All Rights reserved.
+*******************************************************************************/
+#ifndef DPN_PERIPHERAL_INTERFACE_CMN_H
+#define DPN_PERIPHERAL_INTERFACE_CMN_H
+
+#ifdef DPN_API
+    #undef DPN_API
+#endif
+#ifdef _WIN32 // windows
+    #ifdef STATICLIB
+        #define DPN_API
+    #else
+        #ifdef DEEPOON_SHARED_LIBRARY // dll export
+            #define DPN_API extern "C" __declspec(dllexport)
+        #else // dll import for windows
+            #define DPN_API
+        #endif
+    #endif
+#else // non windows platform
+    #define DPN_API // no need to do declaration for android/linux
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// major, minor, rev: 0~255
+#define DPNP_MAKE_VERSION(major,minor,rev) ((major&0xff)|((minor&0xff)<<8)|(rev<<16))
+#define DPNP_STR_LEN_SHORT    100
+#define DPNP_STR_LEN_MEDIUM   256
+#define DPNP_STR_LEN_LONG     1024
+#define DPNP_SER_PORT         6004
+// Debug control device name
+#define DPNP_DEBUG_CONTROL_DEVICE_NAME  "DPVR_DEBUG_DEVICE"
+
+typedef struct dpnpDevice * DPNP_DEVICE;
+
+enum DPNP_EVENT_TYPE
+{
+    DPNP_EVENT_TYPE_CONNECT             = 0x0001,
+    DPNP_EVENT_TYPE_DISCONNECT          = 0x0002,
+    DPNP_EVENT_TYPE_USB_PLUGIN          = 0x0004,
+    DPNP_EVENT_TYPE_USB_UNPLUG          = 0x0008,
+    DPNP_EVENT_TYPE_HDMI_PLUGIN         = 0x0010,
+    DPNP_EVENT_TYPE_HDMI_UNPLUG         = 0x0020,
+    DPNP_EVENT_TYPE_POSE_UPDATE         = 0x0040,
+    DPNP_EVENT_TYPE_POSITION_UPDATE     = 0x0080,
+    DPNP_EVENT_TYPE_TIME_UPDATE         = 0x0100,
+    DPNP_EVENT_TYPE_QUATERNION_UPDATE   = 0x0200,
+    DPNP_EVENT_TYPE_VECTOR_UPDATE       = 0x0400,
+    DPNP_EVENT_TYPE_AXIS_UPDATE         = 0x0800,
+    DPNP_EVENT_TYPE_BUTTON_UPDATE       = 0x1000,
+    DPNP_EVENT_TYPE_ATTRIBUTE_UPDATE    = 0x2000,
+    DPNP_EVENT_TYPE_p_sensor               = (1 << 14),// 0x4000 used by p-sensor
+    DPNP_EVENT_TYPE_PERFORMANCE_LOW     = 0x8000,
+    DPNP_EVENT_TYPE_BASE_A_TRACK        = 0x10000,
+    DPNP_EVENT_TYPE_BASE_A_UNTRACK      = 0x20000,
+    DPNP_EVENT_TYPE_BASE_B_TRACK        = 0x40000,
+    DPNP_EVENT_TYPE_BASE_B_UNTRACK      = 0x80000,
+    DPNP_EVENT_TYPE_FILE_STREAM_END     = 0x100000,
+    DPNP_EVENT_TYPE_VSYNC               = 0x200000,
+    DPNP_EVENT_TYPE_SENSOR_RESET        = 0x400000,
+    DPNP_EVENT_TYPE_RECENTER            = 0x800000,
+    DPNP_EVENT_TYPE_INVERT_YAW          = 0x1000000,
+    DPNP_EVENT_TYPE_UNINVERT_YAW        = 0x2000000,
+    DPNP_EVENT_TYPE_BASE_AUTOCALIB      = 0x4000000,
+
+    DPNP_EVENT_TYPE_27 = 1 << 27,
+    DPNP_EVENT_TYPE_28 = 1 << 28,
+    DPNP_EVENT_TYPE_29 = 1 << 29,
+    DPNP_EVENT_TYPE_30 = 1 << 30,
+    DPNP_EVENT_TYPE_COMMON_EVENT = 1 << 31,
+};
+
+static const char* DPNP_EVENT_TYPE_NAMES[]=
+{
+    "DPNP_EVENT_TYPE_CONNECT",
+    "DPNP_EVENT_TYPE_DISCONNECT",
+    "DPNP_EVENT_TYPE_USB_PLUGIN",
+    "DPNP_EVENT_TYPE_USB_UNPLUG",
+    "DPNP_EVENT_TYPE_HDMI_PLUGIN",
+    "DPNP_EVENT_TYPE_HDMI_UNPLUG",
+    "DPNP_EVENT_TYPE_POSE_UPDATE",
+    "DPNP_EVENT_TYPE_POSITION_UPDATE",
+    "DPNP_EVENT_TYPE_TIME_UPDATE",
+    "DPNP_EVENT_TYPE_QUATERNION_UPDATE",
+    "DPNP_EVENT_TYPE_VECTOR_UPDATE",
+    "DPNP_EVENT_TYPE_AXIS_UPDATE",
+    "DPNP_EVENT_TYPE_BUTTON_UPDATE",
+    "DPNP_EVENT_TYPE_ATTRIBUTE_UPDATE",
+    "DPNP_EVENT_TYPE_p_sensor",
+    "DPNP_EVENT_TYPE_PERFORMANCE_LOW",
+    "DPNP_EVENT_TYPE_BASE_A_TRACK",
+    "DPNP_EVENT_TYPE_BASE_A_UNTRACK",
+    "DPNP_EVENT_TYPE_BASE_B_TRACK",
+    "DPNP_EVENT_TYPE_BASE_B_UNTRACK",
+    "DPNP_EVENT_TYPE_FILE_STREAM_END",
+    "DPNP_EVENT_TYPE_VSYNC",
+    "DPNP_EVENT_TYPE_SENSOR_RESET",
+    "DPNP_EVENT_TYPE_RECENTER",
+    "DPNP_EVENT_TYPE_INVERT_YAW",
+    "DPNP_EVENT_TYPE_UNINVERT_YAW",
+    "DPNP_EVENT_TYPE_BASE_AUTOCALIB",
+    "DPNP_EVENT_TYPE_27",
+    "DPNP_EVENT_TYPE_28",
+    "DPNP_EVENT_TYPE_29",
+    "DPNP_EVENT_TYPE_30",
+    "DPNP_EVENT_TYPE_COMMON_EVENT"
+};
+
+enum DPNP_DEVICE_TYPE
+{
+    DPNP_DEVICE_TYPE_JOYSTICK           = 0,
+    DPNP_DEVICE_TYPE_LEFT_HAND          = 1,
+    DPNP_DEVICE_TYPE_RIGHT_HAND         = 2,
+    DPNP_DEVICE_TYPE_HEAD_TRACKER       = 3,
+    DPNP_DEVICE_TYPE_LEFT_CONTROLLER    = 4,
+    DPNP_DEVICE_TYPE_RIGHT_CONTROLLER   = 5,
+    DPNP_DEVICE_TYPE_LEFT_JOYSTICK      = 6,
+    DPNP_DEVICE_TYPE_RIGHT_JOYSTICK     = 7,
+    DPNP_DEVICE_TYPE_MOUSE_KEYBOARD     = 8,
+    DPNP_DEVICE_TYPE_TRACKER            = 9,
+    DPNP_DEVICE_TYPE_DEBUG_CONTROL      = 10,
+    DPNP_DEVICE_TYPE_BASE_MASTER        = 11,
+    DPNP_DEVICE_TYPE_BASE_SLAVE         = 12,
+    DPNP_DEVICE_TYPE_MR_CONTROLLER      = 13,
+    DPNP_DEVICE_TYPE_HEAD_POSITION_TRACKER = 14,
+
+    // This should always be the last one.
+    DPNP_DEVICE_TYPE_NUM,
+};
+
+enum DPNP_DEVICE_STATUS
+{
+    DPNP_DEVICE_STATUS_CONNECT              = 0x0001,
+    DPNP_DEVICE_STATUS_DISCONNECT           = 0x0002,
+    DPNP_DEVICE_STATUS_USB_PLUGIN           = 0x0004,
+    DPNP_DEVICE_STATUS_USB_UNPLUG           = 0x0008,
+    DPNP_DEVICE_STATUS_HDMI_PLUGIN          = 0x0010,
+    DPNP_DEVICE_STATUS_HDMI_UNPLUG          = 0x0020,
+    DPNP_DEVICE_STATUS_BASE_A_TRACK         = 0x0040,
+    DPNP_DEVICE_STATUS_BASE_A_UNTRACK       = 0x0080,
+    DPNP_DEVICE_STATUS_BASE_B_TRACK         = 0x0100,
+    DPNP_DEVICE_STATUS_BASE_B_UNTRACK       = 0x0200,
+};
+
+enum EVRButtonId
+{
+    DPNP_k_EButton_System           = 0,
+    DPNP_k_EButton_ApplicationMenu  = 1,
+    DPNP_k_EButton_Grip             = 2,
+    DPNP_k_EButton_DPad_Left        = 3,
+    DPNP_k_EButton_DPad_Up          = 4,
+    DPNP_k_EButton_DPad_Right       = 5,
+    DPNP_k_EButton_DPad_Down        = 6,
+    DPNP_k_EButton_A                = 7,
+    DPNP_k_EButton_B                = 8,
+    DPNP_k_EButton_X                = 9,
+    DPNP_k_EButton_Y                = 10,
+    DPNP_k_EButton_Touchpad         = 11,
+    DPNP_k_EButton_Trigger          = 12,
+    DPNP_k_EButton_Joystick         = 13,
+    DPNP_k_EButton_ProximitySensor  = 14,
+
+    DPNP_k_EButton_Max              = 16
+};
+
+typedef unsigned short dpnpbutton_t;
+inline dpnpbutton_t DpnpButtonMask(int id) { return 1 << id; }
+#define DPNP_BUTTON_MASK(x) (1 << (x))
+
+#define DPNP_VALUE_TYPE_SIZE_POSE           10
+#define DPNP_VALUE_TYPE_SIZE_POSITION       9
+#define DPNP_VALUE_TYPE_SIZE_TIME           1
+#define DPNP_VALUE_TYPE_SIZE_QUATERNION     4
+#define DPNP_VALUE_TYPE_SIZE_VECTOR         3
+#define DPNP_VALUE_TYPE_SIZE_AXIS           1
+#define DPNP_VALUE_TYPE_SIZE_ANALOG         8
+#define DPNP_VALUE_TYPE_SIZE_BUTTON         1
+#define DPNP_VALUE_TYPE_SIZE_ATTRIBUTE      1
+#define DPNP_VALUE_TYPE_SIZE_FEEDBACK       1
+#define DPNP_VALUE_TYPE_SIZE_SENSOR         11
+#define DPNP_VALUE_TYPE_SIZE_HAPTIC         7
+
+typedef struct _dpnpTransform
+{
+    double time[DPNP_VALUE_TYPE_SIZE_TIME];
+    float  pose[DPNP_VALUE_TYPE_SIZE_POSE];
+    float  position[DPNP_VALUE_TYPE_SIZE_POSITION];
+    float  sensor[DPNP_VALUE_TYPE_SIZE_SENSOR];
+} dpnpTransform;
+
+enum DPNP_RUNTIMEGAMEPATCH
+{
+    DPNP_RUNTIMEGAMEPATCH_HTC_VIVE_PRO_TOUCHPAD_MODE = (1U),
+    DPNP_RUNTIMEGAMEPATCH_E4CONTROLLER_STANDARD_MODE = (1U << 1),
+    DPNP_RUNTIMEGAMEPATCH_FORCE_OCULUS_JOYSTICK_MODE = (1U << 2),
+    DPNP_RUNTIMEGAMEPATCH_CONTROLLER_SKELETAL_CANCEL = (1U << 10),
+    DPNP_RUNTIMEGAMEPATCH_PROXIMITY_ALWAYS_REPORT_ON = (1U << 13),
+    DPNP_RUNTIMEGAMEPATCH_HMD_KEEP_POSE_AND_POSITION = (1U << 14),
+    DPNP_RUNTIMEGAMEPATCH_CONTROLLER_ANGULARVELOCITY = (1U << 15),
+    DPNP_RUNTIMEGAMEPATCH_CONTROLLER_ADJUST_POSITION = (1U << 16),
+    DPNP_RUNTIMEGAMEPATCH_CONTROLLER_NEED_PATCH_POSE = (1U << 17),
+    DPNP_RUNTIMEGAMEPATCH_CONTROLLER_RESTORE_DEFAULT = (1U << 18),
+    DPNP_RUNTIMEGAMEPATCH_DPAD_PATCH_RESTORE_DEFAULT = (1U << 19),
+    DPNP_RUNTIMEGAMEPATCH_HMD_HTC_KEEP_TIL_NEXT_GAME = (1U << 30),
+    DPNP_STEAMVR_STANDBY                             = (1U << 31),
+};
+
+enum DPNP_DPAD_PUSH_AND_PRESS_FLAG
+{
+    DPNP_DPAD_DEFAULT_SIMPLY_PUSH = 0,
+    DPNP_DPAD_ONLY_PUSH_NOT_PRESS = 1,
+    DPNP_DPAD_MUST_PUSH_AND_PRESS = 2,
+    DPNP_DPAD_SPECIAL_PRESS_LOGIC = 3,
+};
+
+enum DPNP_DPAD_OPTION
+{
+    DPNP_DPAD_OPTION_SUPPORT_S_MODE = (1U),
+    DPNP_DPAD_OPTION_SUPPORT_J_MODE = (1U << 1),
+    DPNP_DPAD_OPTION_SUPPORT_T_MODE = (1U << 2),
+    DPNP_DPAD_PUSH_OPERATION_MOVE_L = (1U << 3),
+    DPNP_DPAD_PUSH_OPERATION_TURN_L = (1U << 4),
+    DPNP_DPAD_PUSH_OPERATION_MOVE_R = (1U << 5),
+    DPNP_DPAD_PUSH_OPERATION_TURN_R = (1U << 6),
+    DPNP_DPAD_ONLY_PUSH_NOT_PRESS_L = (1U << 7),
+    DPNP_DPAD_MUST_PUSH_AND_PRESS_L = (1U << 8),
+    DPNP_DPAD_ONLY_PUSH_NOT_PRESS_R = (1U << 9),
+    DPNP_DPAD_MUST_PUSH_AND_PRESS_R = (1U << 10),
+    DPNP_DPAD_ZERO_OUT_JOYSTICK_X_L = (1U << 11),
+    DPNP_DPAD_ZERO_OUT_JOYSTICK_X_R = (1U << 12),
+    DPNP_DPAD_ZERO_OUT_JOYSTICK_Y_L = (1U << 13),
+    DPNP_DPAD_ZERO_OUT_JOYSTICK_Y_R = (1U << 14),
+    DPNP_DPAD_RETURN_0_WHEN_DISABLE = (1U << 15),
+    DPNP_DPAD_SWITCH_ENABLE_DISABLE = (1U << 30),
+    DPNP_DPAD_PUSH_OPERATION_TYPE_L = (DPNP_DPAD_PUSH_OPERATION_MOVE_L | DPNP_DPAD_PUSH_OPERATION_TURN_L),
+    DPNP_DPAD_PUSH_OPERATION_TYPE_R = (DPNP_DPAD_PUSH_OPERATION_MOVE_R | DPNP_DPAD_PUSH_OPERATION_TURN_R),
+    DPNP_DPAD_PUSH_AND_PRESS_FLAG_L = (DPNP_DPAD_ONLY_PUSH_NOT_PRESS_L | DPNP_DPAD_MUST_PUSH_AND_PRESS_L),
+    DPNP_DPAD_PUSH_AND_PRESS_FLAG_R = (DPNP_DPAD_ONLY_PUSH_NOT_PRESS_R | DPNP_DPAD_MUST_PUSH_AND_PRESS_R),
+};
+
+enum DPNP_DPAD_INDEX
+{
+    DPNP_DPAD_INDEX_OPTION_BIT = 0,     // bit field of DPNP_DPAD_OPTION
+    DPNP_DPAD_INDEX_MOVE_VALUE = 1,     // val>0 means move speed(mm/s); val<0 means teleport distance(mm)
+    DPNP_DPAD_INDEX_TURN_VALUE = 2,     // val>0 means turn angle(degrees); val<0 means anglular velocity (degree/s)
+    DPNP_DPAD_INDEX_HEIGHT_VAL = 3,     // height adjust value; val>0 means adjust height(mm); val<0 means adjust height speed(mm/s);
+    DPNP_DPAD_INDEX_MOVE_RANGE = 4,     // max move range, in mm, val>0 means range is a circle of radius=val, val<0 means range is a square with sides of length=2*abs(val)
+    DPNP_DPAD_INDEX_HEIGHT_LMT = 5,     // max height limit, in mm, val>0 means squat only, limit y offset inside [-limit, 0], val<0 means limit y offset inside [-limit, limit]
+};
+
+union GeneralSharedInfo
+{
+    char data[256];                     // place holder
+    struct {
+        unsigned int  version;          // write only by steamdriver, starting from 1, indicates current version in using
+        unsigned int  suggestver;       // write only by client, suggestver must be less than version, 0 means no need to downgrade
+        unsigned long steamvrpid;       // write only by steamdriver
+        unsigned long gamepid;          // write only by steamdriver
+        union {
+            struct {                    // unit: degree, degree/s, mm or mm/s
+                int posepatches[6];     // (left and right) pitch, yaw, roll
+                int positionpatches[6]; // (left and right) x, y, z
+                int dpadpatches[6];     // [0]options, [1]move speed, [2]turn angle, [3]height adjust value, [4]max move range, [5]max height limit. Please check DPNP_DPAD_INDEX for details
+            } v1;
+        };
+    };
+};
+
+enum DPNP_REFRESH_RATE
+{
+    DPNP_REFRESH_RATE_72HZ       = 0x02,
+    DPNP_REFRESH_RATE_90HZ       = 0x03,
+    DPNP_REFRESH_RATE_72HZ_4K    = 0x12,
+    DPNP_REFRESH_RATE_90HZ_4K    = 0x13,
+    DPNP_REFRESH_RATE_120HZ_4K   = 0x14,
+    DPNP_REFRESH_RATE_72HZ_2_5K  = 0x22,
+    DPNP_REFRESH_RATE_90HZ_2_5K  = 0x23,
+};
+
+enum DPNP_VALUE_TYPE
+{
+    DPNP_VALUE_TYPE_POSE_COUNT = 0,
+    DPNP_VALUE_TYPE_POSITION_COUNT,
+    DPNP_VALUE_TYPE_TIME_COUNT,
+    DPNP_VALUE_TYPE_QUATERNION_COUNT,
+    DPNP_VALUE_TYPE_VECTOR_COUNT,
+    DPNP_VALUE_TYPE_AXIS_COUNT,
+    DPNP_VALUE_TYPE_BUTTON_COUNT,
+    DPNP_VALUE_TYPE_ATTRIBUTE_COUNT,
+    DPNP_VALUE_TYPE_FEEDBACK_COUNT,
+    DPNP_VALUE_TYPE_TRANSFORM_COUNT,
+    DPNP_VALUE_TYPE_ANALOG_COUNT,
+
+    DPNP_VALUE_TYPE_POSE = 0x100,                           // Size = 10, type: float
+    // POSE0
+    DPNP_VALUE_TYPE_POSE_W = DPNP_VALUE_TYPE_POSE,
+    DPNP_VALUE_TYPE_POSE_I,
+    DPNP_VALUE_TYPE_POSE_J,
+    DPNP_VALUE_TYPE_POSE_K,
+    DPNP_VALUE_TYPE_ANGULAR_VELOCITY_X,
+    DPNP_VALUE_TYPE_ANGULAR_VELOCITY_Y,
+    DPNP_VALUE_TYPE_ANGULAR_VELOCITY_Z,
+    DPNP_VALUE_TYPE_ANGULAR_ACCELERATION_X,
+    DPNP_VALUE_TYPE_ANGULAR_ACCELERATION_Y,
+    DPNP_VALUE_TYPE_ANGULAR_ACCELERATION_Z,
+    // POSE1
+
+    DPNP_VALUE_TYPE_POSITION = 0x200,                       // Size = 9, type: float
+    // POSITION0
+    DPNP_VALUE_TYPE_POSITION_X = DPNP_VALUE_TYPE_POSITION,
+    DPNP_VALUE_TYPE_POSITION_Y,
+    DPNP_VALUE_TYPE_POSITION_Z,
+    DPNP_VALUE_TYPE_POSITION_VELOCITY_X,
+    DPNP_VALUE_TYPE_POSITION_VELOCITY_Y,
+    DPNP_VALUE_TYPE_POSITION_VELOCITY_Z,
+    DPNP_VALUE_TYPE_POSITION_ACCELERATION_X,
+    DPNP_VALUE_TYPE_POSITION_ACCELERATION_Y,
+    DPNP_VALUE_TYPE_POSITION_ACCELERATION_Z,
+    // POSITION1
+
+    DPNP_VALUE_TYPE_TIME = 0x300,                           // Size = 1, type: double
+    // TIME_CURRENT
+    DPNP_VALUE_TYPE_TIME_CURRENT = DPNP_VALUE_TYPE_TIME,
+    /*    TIME_POSE_0
+                    .
+                    .
+                    .
+          TIME_POSE_N
+          TIME_POSITION_0
+                        .
+                        .
+                        .
+          TIME_POSITION_N
+               others
+    */
+
+    DPNP_VALUE_TYPE_QUATERNION = 0x400,                     // Size = 4, type: float
+    // QUATERNION0
+    DPNP_VALUE_TYPE_QUATERNION_W = DPNP_VALUE_TYPE_QUATERNION,
+    DPNP_VALUE_TYPE_QUATERNION_I,
+    DPNP_VALUE_TYPE_QUATERNION_J,
+    DPNP_VALUE_TYPE_QUATERNION_K,
+    // QUATERNION1
+
+    DPNP_VALUE_TYPE_VECTOR = 0x500,                         // Size = 3, type: float
+    // VECTOR0
+    DPNP_VALUE_TYPE_VECTOR_X = DPNP_VALUE_TYPE_VECTOR,
+    DPNP_VALUE_TYPE_VECTOR_Y,
+    DPNP_VALUE_TYPE_VECTOR_Z,
+    // VECTOR1
+
+    DPNP_VALUE_TYPE_AXIS = 0x600,                           // Size = 1, type: float
+    DPNP_VALUE_TYPE_AXIS_X = DPNP_VALUE_TYPE_AXIS,
+    DPNP_VALUE_TYPE_AXIS_Y,
+
+    DPNP_VALUE_TYPE_BUTTON = 0x700,                         // Size = 1, type: int
+    DPNP_VALUE_TYPE_KEYBOARD,
+
+    DPNP_VALUE_TYPE_ATTRIBUTE = 0x800,                      // Size = 1, type: void *
+    DPNP_VALUE_TYPE_ATTRIBUTE_DEVICE_STATUS = DPNP_VALUE_TYPE_ATTRIBUTE,
+    DPNP_VALUE_TYPE_ATTRIBUTE_DEVICE_NAME,
+    DPNP_VALUE_TYPE_ATTRIBUTE_DEVICE_SERIAL_NUMBER,
+    DPNP_VALUE_TYPE_ATTRIBUTE_DEVICE_VID,
+    DPNP_VALUE_TYPE_ATTRIBUTE_DEVICE_PID,
+    DPNP_VALUE_TYPE_ATTRIBUTE_FIRMWARE_VERSION,
+    DPNP_VALUE_TYPE_ATTRIBUTE_HARDWARE_VERSION,
+    DPNP_VALUE_TYPE_ATTRIBUTE_BACK_LIGHT,
+    DPNP_VALUE_TYPE_ATTRIBUTE_P_SENSOR,
+    DPNP_VALUE_TYPE_ATTRIBUTE_BATTERY_POWER,
+    DPNP_VALUE_TYPE_ATTRIBUTE_RF_VERSION,
+    DPNP_VALUE_TYPE_ATTRIBUTE_FPGA_VERSION,
+    DPNP_VALUE_TYPE_ATTRIBUTE_RECENTER_GLOBAL,
+    DPNP_VALUE_TYPE_ATTRIBUTE_FIX_POSE,                     // always makes hmd pose at (0,0,0,1.0)
+    DPNP_VALUE_TYPE_ATTRIBUTE_SCREEN,                       // On/Off
+    DPNP_VALUE_TYPE_ATTRIBUTE_RESET_SENSOR_FUSION,
+    DPNP_VALUE_TYPE_ATTRIBUTE_DDK_LOG_PATH_NAME,            // void type, passing char * strings
+    DPNP_VALUE_TYPE_ATTRIBUTE_DDK_LOG_MASK,                 // int type
+    DPNP_VALUE_TYPE_ATTRIBUTE_DDK_UDP_PORT,                 // int type
+    DPNP_VALUE_TYPE_ATTRIBUTE_DDK_UDP_INJECT,               // int type 0 disable, 1 enable
+    DPNP_VALUE_TYPE_ATTRIBUTE_DDK_UDP_LOG,                  // int type 0 disable, 1 enable
+    DPNP_VALUE_TYPE_ATTRIBUTE_DDK_SRC_FILENAME,             // void type, passing char * strings
+    DPNP_VALUE_TYPE_ATTRIBUTE_DDK_FILE_SRC_EN,              // int type 0 disable, 1 enable
+    DPNP_VALUE_TYPE_ATTRIBUTE_WRONG_BASE_USE,
+    DPNP_VALUE_TYPE_ATTRIBUTE_HMD_EEPROM_ERROR,
+    DPNP_VALUE_TYPE_ATTRIBUTE_REBOOT,
+    DPNP_VALUE_TYPE_ATTRIBUTE_HMD_ONLY,                     // int type 0 disable, 1 enable
+    DPNP_VALUE_TYPE_ATTRIBUTE_INVERT_YAW,                   // int type false disable, true enable
+    DPNP_VALUE_TYPE_ATTRIBUTE_DEVICE_MODE,
+    DPNP_VALUE_TYPE_ATTRIBUTE_EYE_OFFSET,
+    DPNP_VALUE_TYPE_ATTRIBUTE_AUTOCALIB_STATUS,             // polaris1.1 autoCalibration status
+    DPNP_VALUE_TYPE_ATTRIBUTE_HMD_REAL_YAW,                 // nolo
+    DPNP_VALUE_TYPE_ATTRIBUTE_RECENTER_WITH_YAW,            // nolo
+    DPNP_VALUE_TYPE_ATTRIBUTE_PLUGIN_NAME,                  // nolo / Ximmerse / Polaris
+    DPNP_VALUE_TYPE_ATTRIBUTE_MOVEMENT,                     // movement
+    DPNP_VALUE_TYPE_ATTRIBUTE_INTERACTIVE_TYPE,             // mobileSDK only (0-mobile touchpad 1-controller)
+    DPNP_VALUE_TYPE_ATTRIBUTE_INTERACTIVE_HAND,             // mobileSDK only (0-right, 1-left)
+    DPNP_VALUE_TYPE_ATTRIBUTE_CEILING_MODE,                 // int type 0 disable, 1 enable
+
+    DPNP_VALUE_TYPE_ATTRIBUTE_BREATH_LIGHT_COLOR = 0x850,   // char type 1  FF0000 red,  2 FFF300 yellow, 3 36FF48 green, 4 62F1FF light blue, 5 000CFF blue, 6 8000FF purple
+    DPNP_VALUE_TYPE_ATTRIBUTE_BREATH_FOUT_COLOR,            //
+    // add 0428
+    DPNP_VALUE_TYPE_ATTRIBUTE_REAL_COLOR,                   // char type 04 red, 03 green
+    DPNP_VALUE_TYPE_ATTRIBUTE_BREATH_LIGHT_SPEED,           // char type 0000-0s, 0001-0.13s, 0010-0.26s, 0011-0.38s, 0100-0.51s, 0101-0.77s, 0110-1.04s, 0111-1.6s, 1000-2.1s, 1001-2.6s, 1010-3.1s, 1011-4.2s, 1100-5.2s, 1101-6.2s, 1110-7.3s, 1111-8.3s. Storage time or closing time: 0000-0.04s, 0001-0.13s, 0010-0.26s, 0011-0.38s, 0100-0.51s, 0101-0.77s, 0110-1.04s, 0111-1.6s, 1000-2.1s, 1001-2.6s, 1010-3.1s, 1011-4.2s, 1100-5.2s, 1101-6.2s, 1110-7.3s, 1111-8.3s.
+    DPNP_VALUE_TYPE_ATTRIBUTE_BRIGHTNESS,                   // char type 0x00-3.1875 Ma, 0x01-6.375 Ma, 0x10-12.75Ma, 0x11-25.5 Ma
+    DPNP_VALUE_TYPE_ATTRIBUTE_REFRESH_RATE,                 // char type see DPNP_REFRESH_RATE
+
+    DPNP_VALUE_TYPE_ATTRIBUTE_CONTROLLER_PAIR,              // int type, 0 left, 1 right
+    DPNP_VALUE_TYPE_ATTRIBUTE_CONTROLLER_PAIR_RESULT,       // char2, [0] : index, [1] : result
+    DPNP_VALUE_TYPE_ATTRIBUTE_FISHEYE_STATUS,               // unsigned char
+
+    DPNP_VALUE_TYPE_ATTRIBUTE_ENTER_UPGRADE,
+
+    DPNP_VALUE_TYPE_ATTRIBUTE_LEFT_CONTROLLER_UPGRADE,      // char string, the framework img path
+    DPNP_VALUE_TYPE_ATTRIBUTE_LEFT_CONTROLLER_UPGRADE_RESULT,
+    DPNP_VALUE_TYPE_ATTRIBUTE_LEFT_CONTROLLER_UPGRADE_PERSENT,
+    DPNP_VALUE_TYPE_ATTRIBUTE_RIGHT_CONTROLLER_UPGRADE,     // char string, the framework img path
+    DPNP_VALUE_TYPE_ATTRIBUTE_RIGHT_CONTROLLER_UPGRADE_PERSENT,
+    DPNP_VALUE_TYPE_ATTRIBUTE_RIGHT_CONTROLLER_UPGRADE_RESULT,
+    DPNP_VALUE_TYPE_ATTRIBUTE_2POTG_UPGRADE,                // char string, the framework img path
+    DPNP_VALUE_TYPE_ATTRIBUTE_2POTG_UPGRADE_PERSENT,
+    DPNP_VALUE_TYPE_ATTRIBUTE_2POTG_UPGRADE_RESULT,
+    DPNP_VALUE_TYPE_ATTRIBUTE_DEVICE_MSC_MODE,
+
+    DPNP_VALUE_TYPE_ATTRIBUTE_GET_LIGHT_MODE,               // unsigned char[3] : breathLightMode, colorIndex, breathLightSpeed;
+
+    DPNP_VALUE_TYPE_ATTRIBUTE_CLOSE_LIGHT,
+    DPNP_VALUE_TYPE_ATTRIBUTE_SOUND_COLOR,
+    DPNP_VALUE_TYPE_ATTRIBUTE_STATUS_COLOR,                 // char type 04 red, 03 green
+    DPNP_VALUE_TYPE_ATTRIBUTE_BREATH_CONSTANT_COLOR,        // char type 0x08 8 color, 0x14 20 color,0x60 90 color
+    DPNP_VALUE_TYPE_ATTRIBUTE_2POTG_VERSION,                // char string
+
+    DPNP_VALUE_TYPE_ATTRIBUTE_VSYNC_INTERVAL,               // double type : query vsync interval value, readonly
+    DPNP_VALUE_TYPE_ATTRIBUTE_ADAPTER_STATUS,               // char type bit[0]: bForceHDMI72HZ  bit[1]: bHDMIConnected bit[2]: b4K120NotSupport bit[3]: b4K120NotSure
+    DPNP_VALUE_TYPE_ATTRIBUTE_EYETEXTURE_SIZE,              // uint type, valid value [0, 5000], if value > 500, E4 SteamVR driver will report to SteamVR, valid after restart SteamVR
+    DPNP_VALUE_TYPE_ATTRIBUTE_HIDDENMESH,                   // char type, bool value, default is false, set to true to turn on hiddenmesh on SteamVR, valid after restart SteamVR
+    DPNP_VALUE_TYPE_ATTRIBUTE_CONTROLLER_MODE,              // char type, 0:default mode 1:joystick mode 2:touchpad mode, valid after restart SteamVR
+    DPNP_VALUE_TYPE_ATTRIBUTE_HAPTIC_LEVEL,                 // uint type, valid value [0, 15], runtime valid
+    DPNP_VALUE_TYPE_ATTRIBUTE_STILL_TIMEOUT,                // uint type, valid value [0, 10000], in ms, runtime valid
+    DPNP_VALUE_TYPE_ATTRIBUTE_STILL_THRESHOLD,              // double type, valid value [0, 0.1], runtime valid
+    DPNP_VALUE_TYPE_ATTRIBUTE_PREDICTION_ATW,               // double type, valid value [0, 0.1], runtime valid
+    DPNP_VALUE_TYPE_ATTRIBUTE_PREDICTION_CLIENT,            // double type, valid value [0, 0.1], runtime valid
+    DPNP_VALUE_TYPE_ATTRIBUTE_PREDICTION_CLIENT_A,          // double type, valid value [0, 0.1], runtime valid
+    DPNP_VALUE_TYPE_ATTRIBUTE_PREDICTION_CONTROLLER,        // double type, valid value [0, 0.1], valid after restart SDK
+    DPNP_VALUE_TYPE_ATTRIBUTE_ATW_LOG,                      // char type, bool value, default is false, turn on/off atw log
+    DPNP_VALUE_TYPE_ATTRIBUTE_RESET_TIMER,                  // reset timer
+    DPNP_VALUE_TYPE_ATTRIBUTE_PAUSE_CONTROLLER,             // char type, bool value, pause/resume controller tracking
+    DPNP_VALUE_TYPE_ATTRIBUTE_HAPTIC_DIRECT_REPORT,         // char type, bool value, default is false, set to true to turn off haptic combination
+    DPNP_VALUE_TYPE_ATTRIBUTE_CONTROLLER_PREDICT,           // char type, bool value, default is false, set to true to turn off controller prediction by SteamVR, valid after restart SteamVR
+    DPNP_VALUE_TYPE_ATTRIBUTE_ATW_DUMP,                     // dump atw
+    DPNP_VALUE_TYPE_ATTRIBUTE_NV_WAIT_FENCE,                // char type, bool value, default is true, turn on/off Atw_NV wait fence logic
+    DPNP_VALUE_TYPE_ATTRIBUTE_CLIENT_RENDER_WAIT,           // char type, bool value, default is false, turn on/off client render wait
+    DPNP_VALUE_TYPE_ATTRIBUTE_CLIENT_RENDER_WAIT_MS,        // uint type
+    DPNP_VALUE_TYPE_ATTRIBUTE_SAVE_MAP,                     // save map
+    DPNP_VALUE_TYPE_ATTRIBUTE_CONTROLLER_PA,                // char type, bool value, default is false, turn on/off controller PA
+    DPNP_VALUE_TYPE_ATTRIBUTE_CONTROLLER_IMU_LOG,           // char type, bool value, default is false, turn on/off controller IMU log
+    DPNP_VALUE_TYPE_ATTRIBUTE_DEBUG_RENDER,
+    DPNP_VALUE_TYPE_ATTRIBUTE_CLIENT_DEBUG_RENDER,
+    DPNP_VALUE_TYPE_ATTRIBUTE_PRIORITY_CLASS,               // uint type, DWORD value, default is 3, valid value is 0-4, 0:BELOW_NORMAL, 1:NORMAL, 2:ABOVE_NORMAL, 3:HIGH, 4:REALTIME
+    DPNP_VALUE_TYPE_ATTRIBUTE_BUTTON_MASK,                  // uint type, default is 0, bitfield of DPNP_ELITE_BUTTONMASK. Bit clear means report, bit set means masked
+    DPNP_VALUE_TYPE_ATTRIBUTE_FISHEYE_FPS,                  // uint type, DWORD value, read only
+    DPNP_VALUE_TYPE_ATTRIBUTE_HANDLEFISHEYE_FPS,            // uint type, DWORD value, read only
+    DPNP_VALUE_TYPE_ATTRIBUTE_ACCESSIBILITY,                // char type, bool value, default is false, turn on/off accessibility, valid after restart SteamVR
+    DPNP_VALUE_TYPE_ATTRIBUTE_RESET_DP,                     // reset DP
+    DPNP_VALUE_TYPE_ATTRIBUTE_DISABLE_WIRELESS_MODULE,      // char type, bool value, default is false, set to true to disable 2.4G module and controllers, restart SDK to take effect
+    DPNP_VALUE_TYPE_ATTRIBUTE_DISABLE_STEAMVR_CONTROLLERS,  // char type, bool value, default is false, set to true to disable controllers in SteamVR, valid after restart SteamVR
+    DPNP_VALUE_TYPE_ATTRIBUTE_CONTROLLER_EXPOSURE,          // uint type, default is 40
+    DPNP_VALUE_TYPE_ATTRIBUTE_CONTROLLER_EXPOSUREDELAY,     // uint type, default is 625
+    DPNP_VALUE_TYPE_ATTRIBUTE_HANDLEFISHEYE_EXPOSURE,       // uint type, default is 15
+    DPNP_VALUE_TYPE_ATTRIBUTE_HANDLEFISHEYE_GAIN,           // uint type, default is 30
+    DPNP_VALUE_TYPE_ATTRIBUTE_EMBODIED_MODE,                // char type, bool value, embodied robot mode
+
+    DPNP_VALUE_TYPE_FEEDBACK = 0x900,                       // Size = 1, type: void *
+    DPNP_VALUE_TYPE_FEEDBACK_BREATH_LIGHT = DPNP_VALUE_TYPE_FEEDBACK,
+    DPNP_VALUE_TYPE_FEEDBACK_MOTOR,
+
+    DPNP_VALUE_TYPE_SENSOR = 0xa00,                         // Size = 1, type: void *
+    DPNP_VALUE_TYPE_SENSOR_ACC_X = DPNP_VALUE_TYPE_SENSOR,
+    DPNP_VALUE_TYPE_SENSOR_ACC_Y,
+    DPNP_VALUE_TYPE_SENSOR_ACC_Z,
+    DPNP_VALUE_TYPE_SENSOR_GYRO_X,
+    DPNP_VALUE_TYPE_SENSOR_GYRO_Y,
+    DPNP_VALUE_TYPE_SENSOR_GYRO_Z,
+    DPNP_VALUE_TYPE_SENSOR_MAG_X,
+    DPNP_VALUE_TYPE_SENSOR_MAG_Y,
+    DPNP_VALUE_TYPE_SENSOR_MAG_Z,
+    DPNP_VALUE_TYPE_SENSOR_TEMPERATURE,
+    DPNP_VALUE_TYPE_SENSOR_TIMEINSECONDS,
+
+    DPNP_VALUE_TYPE_TRANSFORM = 0xb00,                      // Size = 1, type: void *
+    DPNP_VALUE_TYPE_ANALOG = 0xc00,                         // Size = 8, type: float
+
+    DPNP_TEST_CONTROLLER_CONNECT = 0x1000,
+    DPNP_TEST_CONTROLLER_DISCONNECT,
+
+    DPNP_VALUE_TYPE_STARTUP_ROOMSETUP = 0x1500,
+    DPNP_VALUE_TYPE_ATTRIBUTE_USB_STATE,                    // char; 0 unplugin, 2 : usb2.0, 3 : usb3.0
+    DPNP_VALUE_TYPE_QUERY_ROOMSETUP_FINISHED,               // bool, finished : true, otherwise false
+    DPNP_VALUE_TYPE_DEBUG_WRITE_DATA,
+    DPNP_VALUE_TYPE_SEND_CONTROLLER_LED_CONFIG,
+
+    DPNP_VALUE_TYPE_ROOM_SETUP = 0x2000,
+    DPNP_VALUE_TYPE_ROOM_SETUP_SCAN_ENV_FINISH,
+    DPNP_VALUE_TYPE_ROOM_SETUP_ADJUST_GROUND_HEIGH_FINISH,
+
+    DPNP_VALUE_TYPE_ROOM_SETUP_ENABLE_RECENTER,             // char, 1 enabled, 0 disable
+    DPNP_VALUE_TYPE_ENABLE_CUSTOM_CALL_SEETHROUGH,          // char, 1 enabled, 0 disable
+
+    DPNP_VALUE_TYPE_QUERY_DPVR_ROOM_STATE,                  // char; 1 : active, 0 : inactive
+
+    DPNP_VALUE_TYPE_QUERY_DPVR_ROOM_MAP_EXIST,              // param bool : true exist, false not exist,
+    DPNP_VALUE_TYPE_REMOVE_DPVR_ROOM_MAP,                   // return bool : true succeed, false failed
+
+    DPNP_VALUE_TYPE_DEBUG_MODE_ENABLED,                     // bool
+
+    DPNP_VALUE_TYPE_DEVICE_SLEEP_STATE,
+
+    DPNP_VALUE_TYPE_OVERLAYSYSTEM_LANGUAGE_RESOURCE_BUNDLE, // param DpnpCommonEventParam_T2<std::string, std::string>::Serialize
+
+    DPNP_VALUE_TYPE_QUERY_RECV_FISHEYE_IMAGES, // bool
+
+    DPNP_VALUE_TYPE_ATTRIBUTE_Reboot_RemoveRoomMap,
+    DPNP_VALUE_TYPE_ATTRIBUTE_WakeUpDevice,
+
+    DPNP_VALUE_TYPE_ATTRIBUTE_CameraState, // uint8
+
+    DPNP_VALUE_TYPE_ATTRIBUTE_DeviceOpenSucceed,
+    DPNP_VALUE_TYPE_RESTART_ATW,
+
+    DPNP_VALUE_TYPE_ATTRIBUTE_READ_FROM_DEVICE_DEVICE_SERIAL_NUMBER, // read from device
+    DPNP_VALUE_TYPE_ATTRIBUTE_READ_FROM_DEVICE_FIRMWARE_VERSION, // read from device
+    DPNP_VALUE_TYPE_ATTRIBUTE_READ_FROM_DEVICE_2POTG_VERSION, // read from device
+
+    DPNP_VALUE_TYPE_RENDER_CLIENT_FPS,// int
+    DPNP_VALUE_TYPE_RENDER_CLIENT_NUM,// int
+    DPNP_VALUE_TYPE_SHARE_FISHEYE_IMAGES, // bool
+    DPNP_VALUE_TYPE_APRILTAG_DETECTION, // bool
+    DPNP_VALUE_TYPE_APRILTAG_MAX_COUNT, // unsigned int
+    DPNP_VALUE_TYPE_APRILTAG_SIZE, // double
+    DPNP_VALUE_TYPE_APRILTAG_FAMILY, // char*
+    DPNP_VALUE_TYPE_CONTROLLER_FPS,// int
+    DPNP_VALUE_TYPE_SHARE_HANDLEFISHEYE_IMAGES, // bool
+
+    DPNP_VALUE_TYPE_COMMON_EVENT = 0x4000,
+    DPNP_VALUE_TYPE_COMMON_EVENT_ID,
+    DPNP_VALUE_TYPE_COMMON_EVENT_PARAM,
+
+    DPNP_VALUE_TYPE_DEBUG_CONSOLE_LOG = 0x8000,
+    DPNP_VALUE_TYPE_DEBUG_CONSOLE_LOG_HMD_POSE,
+    DPNP_VALUE_TYPE_SHOW_DEBUGGER,
+
+    DPNP_VALUE_TYPE_DEBUG_StopSlam_StopCSlam_StartSlam,
+    DPNP_VALUE_TYPE_DEBUG_StopSlam_StopCSlam_StartSlam_StartCSlam_LoadMap,
+
+    DPNP_VALUE_TYPE_ATTRIBUTE_ALLOW_CROSS_ADAPTER,
+    DPNP_VALUE_TYPE_ATTRIBUTE_ALLOW_SWITCH_ADPATER,
+    DPNP_VALUE_TYPE_ATTRIBUTE_CROSS_ADAPTER,
+
+    DPNP_VALUE_TYPE_STARTUP_ROOMSETUP1,
+    DPNP_VALUE_TYPE_SHUTDOWN_ROOMSETUP1,
+
+    DPNP_VALUE_TYPE_ROOMSETUP_MODE,
+    DPNP_VALUE_TYPE_ENABLE_LARGE_ROOM
+};
+
+#define ENUM_TO_STRING(value) #value
+
+enum DPNP_ELITE_BUTTONS
+{
+    DPNP_ELITE_BUTTON_TOUCH,
+    DPNP_ELITE_BUTTON_3DTOUCH,
+    DPNP_ELITE_BUTTON_PRESS,
+    DPNP_ELITE_BUTTON_HOLD,
+};
+
+enum DPNP_ELITE_BUTTONMASK
+{
+    DPNP_ELITE_BUTTONMASK_YB                 = 1 << 0,
+    DPNP_ELITE_BUTTONMASK_XA                 = 1 << 1,
+    DPNP_ELITE_BUTTONMASK_GRIP               = 1 << 2,
+    DPNP_ELITE_BUTTONMASK_HOME_MENU          = 1 << 3,
+    DPNP_ELITE_BUTTONMASK_TRIGER             = 1 << 4,
+    DPNP_ELITE_BUTTONMASK_JOYSTICK           = 1 << 5,
+    DPNP_ELITE_BUTTONMASK_TOUCHPAD           = 1 << 6,
+    DPNP_ELITE_BUTTONMASK_PANEL              = 1 << 7,
+    DPNP_ELITE_BUTTONMASK_DPAD_CENTER        = 1 << 8,
+    DPNP_ELITE_BUTTONMASK_DPAD_UP            = 1 << 9,
+    DPNP_ELITE_BUTTONMASK_DPAD_DOWN          = 1 << 10,
+    DPNP_ELITE_BUTTONMASK_DPAD_LEFT          = 1 << 11,
+    DPNP_ELITE_BUTTONMASK_DPAD_RIGHT         = 1 << 12,
+    DPNP_ELITE_BUTTONMASK_PSENSOR            = 1 << 13, // HMD
+    DPNP_ELITE_BUTTONMASK_MENU               = 1 << 14,
+    DPNP_ELITE_BUTTONMASK_BACK               = 1 << 15, // HMD or controller
+    DPNP_ELITE_BUTTONMASK_POWER              = 1 << 16,
+    DPNP_ELITE_BUTTONMASK_VOLUME_UP          = 1 << 17, // HMD
+    DPNP_ELITE_BUTTONMASK_VOLUME_DOWN        = 1 << 18, // HMD
+    DPNP_ELITE_BUTTONMASK_VOLUME             = 1 << 19, // HMD
+    DPNP_ELITE_BUTTONMASK_SCROLL             = 1 << 20,
+    DPNP_ELITE_BUTTONMASK_RESERVED           = 255 << 24,
+};
+
+enum DPNP_ELITE_CONTROLLER_ANALOG
+{
+    DPNP_ELITE_CONTROLLER_ANALOG_TRIGGER,               // trigger
+    DPNP_ELITE_CONTROLLER_ANALOG_GRIP,                  // grip
+    DPNP_ELITE_CONTROLLER_ANALOG_JOYSTICK_X,            // stick x
+    DPNP_ELITE_CONTROLLER_ANALOG_JOYSTICK_Y,            // stick y
+    DPNP_ELITE_CONTROLLER_ANALOG_TOUCHPAD_X,            // touchpad x
+    DPNP_ELITE_CONTROLLER_ANALOG_TOUCHPAD_Y,            // touchpad y
+    DPNP_ELITE_CONTROLLER_ANALOG_BATTERY,               // battery
+    DPNP_ELITE_CONTROLLER_ANALOG_SCROLL,                // scroll
+};
+
+enum DPNP_ELITE_HMD_ANALOG
+{
+    DPNP_ELITE_HMD_ANALOG_IPD,                          // IPD
+    DPNP_ELITE_HMD_ANALOG_BATTERY,                      // battery
+    DPNP_ELITE_HMD_ANALOG_TEMPERATURE,                  // temperature
+    DPNP_ELITE_HMD_ANALOG_VOLUME,                       // volume level
+    DPNP_ELITE_HMD_ANALOG_TOUCHPAD_X,                   // touchpad x
+    DPNP_ELITE_HMD_ANALOG_TOUCHPAD_Y,                   // touchpad y
+};
+
+enum DPNP_POLARIS_BUTTONS
+{
+    DPNP_POLARIS_BUTTON_ST, // stick button
+    DPNP_POLARIS_BUTTON_XA,
+    DPNP_POLARIS_BUTTON_YB,
+    DPNP_POLARIS_BUTTON_HOME_MENU,
+
+    DPNP_POLARIS_BUTTONS_NUM,
+};
+
+enum DPNP_POLARIS_BUTTONMASK
+{
+    DPNP_POLARIS_BUTTONMASK_B = 0x01,
+    DPNP_POLARIS_BUTTONMASK_A = 0x02,
+    DPNP_POLARIS_BUTTONMASK_GRIP = 0x04,
+    DPNP_POLARIS_BUTTONMASK_HOME = 0x08,
+    DPNP_POLARIS_BUTTONMASK_TRIGER = 0x10,
+    DPNP_POLARIS_BUTTONMASK_POWER = 0x20,
+};
+
+enum DPNP_POLARIS_AXES
+{
+    DPNP_POLARIS_AXIS_T,
+    DPNP_POLARIS_AXIS_B,
+    DPNP_POLARIS_AXIS_X, // stick x
+    DPNP_POLARIS_AXIS_Y, // stick y
+
+    DPNP_POLARIS_AXES_NUM,
+};
+
+enum DPNP_POLARIS_BASE_STATION
+{
+    DPNP_POLARIS_BASE_A,
+    DPNP_POLARIS_BASE_B,
+
+    DPNP_POLARIS_BASE_NUM,
+};
+
+enum DPNP_MOUSE_AXIS
+{
+    DPNP_MOUSE_X,
+    DPNP_MOUSE_Y,
+    DPNP_MOUSE_WHEEL
+};
+
+enum DPNP_JOYSTICK_AXIS
+{
+    DPNP_JOYSTICK_X,
+    DPNP_JOYSTICK_Y,
+    DPNP_JOYSTICK_Z,
+
+    DPNP_JOYSTICK_RX,
+    DPNP_JOYSTICK_RY,
+    DPNP_JOYSTICK_RZ,
+
+    DPNP_JOYSTICK_POV
+};
+
+enum DPNP_COMMON_BUTTONS
+{
+    DPNP_KEYBOARD_BUTTON_0,
+    DPNP_KEYBOARD_BUTTON_1,
+    DPNP_KEYBOARD_BUTTON_2,
+    DPNP_KEYBOARD_BUTTON_3,
+    DPNP_KEYBOARD_BUTTON_4,
+    DPNP_KEYBOARD_BUTTON_5,
+    DPNP_KEYBOARD_BUTTON_6,
+    DPNP_KEYBOARD_BUTTON_7,
+    DPNP_KEYBOARD_BUTTON_8,
+    DPNP_KEYBOARD_BUTTON_9,
+
+    DPNP_KEYBOARD_BUTTON_A,
+    DPNP_KEYBOARD_BUTTON_B,
+    DPNP_KEYBOARD_BUTTON_C,
+    DPNP_KEYBOARD_BUTTON_D,
+    DPNP_KEYBOARD_BUTTON_E,
+    DPNP_KEYBOARD_BUTTON_F,
+    DPNP_KEYBOARD_BUTTON_G,
+    DPNP_KEYBOARD_BUTTON_H,
+    DPNP_KEYBOARD_BUTTON_I,
+    DPNP_KEYBOARD_BUTTON_J,
+    DPNP_KEYBOARD_BUTTON_K,
+    DPNP_KEYBOARD_BUTTON_L,
+    DPNP_KEYBOARD_BUTTON_M,
+    DPNP_KEYBOARD_BUTTON_N,
+    DPNP_KEYBOARD_BUTTON_O,
+    DPNP_KEYBOARD_BUTTON_P,
+    DPNP_KEYBOARD_BUTTON_Q,
+    DPNP_KEYBOARD_BUTTON_R,
+    DPNP_KEYBOARD_BUTTON_S,
+    DPNP_KEYBOARD_BUTTON_T,
+    DPNP_KEYBOARD_BUTTON_U,
+    DPNP_KEYBOARD_BUTTON_V,
+    DPNP_KEYBOARD_BUTTON_W,
+    DPNP_KEYBOARD_BUTTON_X,
+    DPNP_KEYBOARD_BUTTON_Y,
+    DPNP_KEYBOARD_BUTTON_Z,
+
+    DPNP_KEYBOARD_BUTTON_F1,
+    DPNP_KEYBOARD_BUTTON_F2,
+    DPNP_KEYBOARD_BUTTON_F3,
+    DPNP_KEYBOARD_BUTTON_F4,
+    DPNP_KEYBOARD_BUTTON_F5,
+    DPNP_KEYBOARD_BUTTON_F6,
+    DPNP_KEYBOARD_BUTTON_F7,
+    DPNP_KEYBOARD_BUTTON_F8,
+    DPNP_KEYBOARD_BUTTON_F9,
+    DPNP_KEYBOARD_BUTTON_F10,
+    DPNP_KEYBOARD_BUTTON_F11,
+    DPNP_KEYBOARD_BUTTON_F12,
+    DPNP_KEYBOARD_BUTTON_F13,
+    DPNP_KEYBOARD_BUTTON_F14,
+    DPNP_KEYBOARD_BUTTON_F15,
+
+    DPNP_KEYBOARD_BUTTON_BACKSPACE,
+    DPNP_KEYBOARD_BUTTON_TAB,
+    DPNP_KEYBOARD_BUTTON_CLEAR,
+    DPNP_KEYBOARD_BUTTON_RETURN,
+    DPNP_KEYBOARD_BUTTON_PAUSE,
+    DPNP_KEYBOARD_BUTTON_ESCAPE,
+    DPNP_KEYBOARD_BUTTON_SPACE,
+
+    DPNP_KEYBOARD_BUTTON_KEYPAD0,
+    DPNP_KEYBOARD_BUTTON_KEYPAD1,
+    DPNP_KEYBOARD_BUTTON_KEYPAD2,
+    DPNP_KEYBOARD_BUTTON_KEYPAD3,
+    DPNP_KEYBOARD_BUTTON_KEYPAD4,
+    DPNP_KEYBOARD_BUTTON_KEYPAD5,
+    DPNP_KEYBOARD_BUTTON_KEYPAD6,
+    DPNP_KEYBOARD_BUTTON_KEYPAD7,
+    DPNP_KEYBOARD_BUTTON_KEYPAD8,
+    DPNP_KEYBOARD_BUTTON_KEYPAD9,
+
+    DPNP_KEYBOARD_BUTTON_KEYPAD_PERIOD, // del
+    DPNP_KEYBOARD_BUTTON_KEYPAD_DIVIDE, // /
+    DPNP_KEYBOARD_BUTTON_KEYPAD_MULTIPLY, // *
+    DPNP_KEYBOARD_BUTTON_KEYPAD_MINUS, // -
+    DPNP_KEYBOARD_BUTTON_KEYPAD_PLUS, // +
+    DPNP_KEYBOARD_BUTTON_KEYPAD_ENTER,
+    DPNP_KEYBOARD_BUTTON_KEYPAD_EQUALS, // =
+
+    DPNP_KEYBOARD_BUTTON_UP,
+    DPNP_KEYBOARD_BUTTON_DOWN,
+    DPNP_KEYBOARD_BUTTON_RIGHT,
+    DPNP_KEYBOARD_BUTTON_LEFT,
+
+    DPNP_KEYBOARD_BUTTON_INSERT,
+    DPNP_KEYBOARD_BUTTON_DELETE,
+    DPNP_KEYBOARD_BUTTON_HOME,
+    DPNP_KEYBOARD_BUTTON_END,
+    DPNP_KEYBOARD_BUTTON_PAGE_UP,
+    DPNP_KEYBOARD_BUTTON_PAGE_DOWN,
+
+    DPNP_KEYBOARD_BUTTON_PRINT,
+    DPNP_KEYBOARD_BUTTON_SYS_REQ,
+    DPNP_KEYBOARD_BUTTON_BREAK,
+
+    DPNP_KEYBOARD_BUTTON_EXCLAIM, // !
+    DPNP_KEYBOARD_BUTTON_DOUBLE_QUOTE, // "
+    DPNP_KEYBOARD_BUTTON_HASH, // #
+    DPNP_KEYBOARD_BUTTON_DOLLAR, // $
+    DPNP_KEYBOARD_BUTTON_AMPERSAND, // &
+    DPNP_KEYBOARD_BUTTON_QUOTE, //'
+    DPNP_KEYBOARD_BUTTON_LEFT_PAREN, // (
+    DPNP_KEYBOARD_BUTTON_RIGHT_PAREN, // )
+    DPNP_KEYBOARD_BUTTON_ASTERISK, // *
+    DPNP_KEYBOARD_BUTTON_PLUS, // +
+    DPNP_KEYBOARD_BUTTON_COMMA, // ,
+    DPNP_KEYBOARD_BUTTON_MINUS, // -
+    DPNP_KEYBOARD_BUTTON_PERIOD, // .
+    DPNP_KEYBOARD_BUTTON_SLASH, // /
+    DPNP_KEYBOARD_BUTTON_COLON, // :
+    DPNP_KEYBOARD_BUTTON_SEMICOLON, // ;
+    DPNP_KEYBOARD_BUTTON_LESS, // <
+    DPNP_KEYBOARD_BUTTON_EQUALS, // =
+    DPNP_KEYBOARD_BUTTON_GREATER, // >
+    DPNP_KEYBOARD_BUTTON_QUESTION, // ?
+    DPNP_KEYBOARD_BUTTON_AT, // @
+    DPNP_KEYBOARD_BUTTON_LEFT_BRACKET, // [
+    DPNP_KEYBOARD_BUTTON_RIGHT_BRACKET, // ]
+    DPNP_KEYBOARD_BUTTON_CARET, // ^
+    DPNP_KEYBOARD_BUTTON_UNDERSCORE, // _
+    DPNP_KEYBOARD_BUTTON_BACKQUOTE, // `
+
+    DPNP_KEYBOARD_BUTTON_NUMLOCK,
+    DPNP_KEYBOARD_BUTTON_CAPSLOCK,
+    DPNP_KEYBOARD_BUTTON_SCROLLLOCK,
+    DPNP_KEYBOARD_BUTTON_RIGHT_SHIFT,
+    DPNP_KEYBOARD_BUTTON_LEFT_SHIFT,
+    DPNP_KEYBOARD_BUTTON_RIGHT_CONTROL,
+    DPNP_KEYBOARD_BUTTON_LEFT_CONTROL,
+    DPNP_KEYBOARD_BUTTON_RIGHT_ALT,
+    DPNP_KEYBOARD_BUTTON_LEFT_ALT,
+
+    DPNP_KEYBOARD_BUTTON_LEFT_COMMAND,
+    DPNP_KEYBOARD_BUTTON_LEFT_APPLE,
+    DPNP_KEYBOARD_BUTTON_LEFT_WINDOWS,
+    DPNP_KEYBOARD_BUTTON_RIGHT_COMMAND,
+    DPNP_KEYBOARD_BUTTON_RIGHT_APPLE,
+    DPNP_KEYBOARD_BUTTON_RIGHT_WINDOWS,
+
+    DPNP_KEYBOARD_BUTTON_ALT_GR,
+    DPNP_KEYBOARD_BUTTON_HELP,
+    DPNP_KEYBOARD_BUTTON_MENU,
+
+    DPNP_MOUSE_LEFT_BUTTON = 0x100,
+    DPNP_MOUSE_RIGHT_BUTTON,
+    DPNP_MOUSE_MIDDLE_BUTTON
+};
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
