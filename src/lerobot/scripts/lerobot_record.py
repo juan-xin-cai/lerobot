@@ -100,6 +100,7 @@ from lerobot.robots import (  # noqa: F401
     RobotConfig,
     bi_openarm_follower,
     bi_so_follower,
+    capture_rig,
     earthrover_mini_plus,
     hope_jr,
     koch_follower,
@@ -115,14 +116,18 @@ from lerobot.teleoperators import (  # noqa: F401
     TeleoperatorConfig,
     bi_openarm_leader,
     bi_so_leader,
+    composite,
     homunculus,
     koch_leader,
     make_teleoperator_from_config,
+    noop,
     omx_leader,
     openarm_leader,
     openarm_mini,
     reachy2_teleoperator,
     so_leader,
+    steamvr_tracker,
+    udp_glove,
     unitree_g1,
 )
 from lerobot.teleoperators.keyboard import KeyboardTeleop
@@ -352,11 +357,15 @@ def record(
         robot_action_processor = robot_action_processor or _r
         robot_observation_processor = robot_observation_processor or _o
 
+    action_features = robot.action_features
+    if not action_features and isinstance(teleop, Teleoperator):
+        action_features = teleop.action_features
+
     dataset_features = combine_feature_dicts(
         aggregate_pipeline_dataset_features(
             pipeline=teleop_action_processor,
             initial_features=create_initial_features(
-                action=robot.action_features
+                action=action_features
             ),  # TODO(steven, pepijn): in future this should be come from teleop or policy
             use_videos=cfg.dataset.video,
         ),
@@ -469,17 +478,33 @@ def record(
                     dataset.clear_episode_buffer()
                     continue
 
+                logging.info("Saving episode %s...", dataset.num_episodes)
                 dataset.save_episode()
+                logging.info("Saved episode %s.", dataset.num_episodes - 1)
                 recorded_episodes += 1
+
+            logging.info("Recording target reached. Disconnecting devices before dataset finalization...")
+            if teleop and teleop.is_connected:
+                logging.info("Disconnecting teleoperator...")
+                teleop.disconnect()
+            if robot.is_connected:
+                logging.info("Disconnecting robot...")
+                robot.disconnect()
+            logging.info("Devices disconnected.")
     finally:
+        logging.info("Recording loop finished or interrupted. Finalizing dataset and closing devices...")
         log_say("Stop recording", cfg.play_sounds, blocking=True)
 
         if dataset:
+            logging.info("Finalizing dataset...")
             dataset.finalize()
+            logging.info("Dataset finalized.")
 
         if robot.is_connected:
+            logging.info("Disconnecting robot...")
             robot.disconnect()
         if teleop and teleop.is_connected:
+            logging.info("Disconnecting teleoperator...")
             teleop.disconnect()
 
         if not is_headless() and listener:
@@ -492,6 +517,7 @@ def record(
                 logging.warning("No episodes saved — skipping push to hub")
 
         log_say("Exiting", cfg.play_sounds)
+        logging.info("lerobot-record exited.")
     return dataset
 
 

@@ -99,6 +99,22 @@ def make_teleoperator_from_config(config: TeleoperatorConfig) -> "Teleoperator":
         from .openarm_mini import OpenArmMini
 
         return OpenArmMini(config)
+    elif config.type == "noop":
+        from .noop import NoOpTeleoperator
+
+        return NoOpTeleoperator(config)
+    elif config.type == "composite":
+        from .composite import CompositeTeleoperator
+
+        return CompositeTeleoperator(config)
+    elif config.type == "steamvr_tracker":
+        from .steamvr_tracker import SteamVRTrackerTeleoperator
+
+        return SteamVRTrackerTeleoperator(config)
+    elif config.type == "udp_glove":
+        from .udp_glove import UDPGloveTeleoperator
+
+        return UDPGloveTeleoperator(config)
     else:
         try:
             return cast("Teleoperator", make_device_from_device_class(config))

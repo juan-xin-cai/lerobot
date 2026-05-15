@@ -1,0 +1,31 @@
+robot:
+  type: capture_rig
+  id: tracker_only_rig
+  cameras: {}
+
+teleop:
+  type: steamvr_tracker
+  id: wrist_tracker_tcp
+  host: 0.0.0.0
+  port: 8765
+  expected_hz: 120
+  timeout_s: 0.05
+  wait_for_connection: true
+  wait_for_first_sample: true
+  log_raw_tcp_until_first_sample: true
+  raw_tcp_log_interval_s: 1.0
+
+dataset:
+  repo_id: local/steamvr_tracker_only
+  root: data/steamvr_tracker_only
+  fps: 30
+  num_episodes: 1
+  episode_time_s: 30
+  reset_time_s: 1
+  single_task: steamvr tracker tcp capture
+  push_to_hub: false
+  video: false
+
+display_data: true
+display_compressed_images: false
+play_sounds: false

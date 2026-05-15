@@ -1080,13 +1080,17 @@ class VideoEncodingManager:
                 writer.cancel_pending_videos()
 
             # finalize() handles flush_pending_videos + parquet + metadata
+            logger.info("Finalizing dataset video/parquet writers...")
             self.dataset.finalize()
+            logger.info("Dataset video/parquet writers finalized.")
 
             # Clean up episode images if recording was interrupted (only for non-streaming mode)
             if exc_type is not None and writer._streaming_encoder is None:
                 writer.cleanup_interrupted_episode(self.dataset.num_episodes)
         else:
+            logger.info("Finalizing dataset...")
             self.dataset.finalize()
+            logger.info("Dataset finalized.")
 
         # Clean up any remaining images directory if it's empty
         img_dir = self.dataset.root / "images"
